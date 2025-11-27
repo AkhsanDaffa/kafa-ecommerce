@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
@@ -57,6 +58,8 @@ func main() {
 				}
 
 				fmt.Printf("[GUDANG] Menerim Pesanan #%d\n", pesanan.ID)
+
+				time.Sleep(500 * time.Millisecond)
 
 				jsonData, _ := pesanan.Serialize()
 

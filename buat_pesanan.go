@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
@@ -22,43 +21,51 @@ func main() {
 			case *kafka.Message:
 				if ev.TopicPartition.Error != nil {
 					log.Printf("Gagal mengirim pesan: %v\n", ev.TopicPartition.Error)
-				} else {
-					log.Printf("Sukses kirim pesan ke topic %s [%d] di offset %v\n",
-						*ev.TopicPartition.Topic, ev.TopicPartition.Partition, ev.TopicPartition.Offset)
 				}
+				// Kita matikan log sukses biar tidak berisik
 			}
 		}
 	}()
 
 	topic := TopicPesananMasuk
-	jumlahPesanan := 5
+	jumlahPesanan := 10 // Kita kurangi jadi 10, tapi tiap pesanan punya 3 status
 
-	fmt.Printf("Mengirim %d pesanan ke topic %s...\n", jumlahPesanan, topic)
+	fmt.Printf("🌊 Mengirim update status berurutan untuk %d Pesanan...\n", jumlahPesanan)
 
 	for i := 1; i <= jumlahPesanan; i++ {
-		pesanan := Pesanan{
-			ID:         i,
-			NamaBarang: fmt.Sprintf("Barang Keren #%d", i),
-			Status:     "BARU",
+		// Kita kirim 3 status berurutan untuk setiap ID
+		statusList := []string{"DIBUAT", "DIBAYAR", "DIKIRIM"}
+
+		for _, status := range statusList {
+			pesanan := Pesanan{
+				ID:         i,
+				NamaBarang: fmt.Sprintf("Barang #%d", i),
+				Status:     status,
+			}
+
+			jsonData, err := pesanan.Serialize()
+			if err != nil {
+				log.Printf("Gagal serialize: %s", err)
+				continue
+			}
+
+			// KUNCI UTAMA ADA DI SINI:
+			// Kita ubah ID (int) menjadi byte array untuk dijadikan Key
+			kunci := []byte(fmt.Sprintf("%d", i))
+
+			err = p.Produce(&kafka.Message{
+				TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+				Value:          jsonData,
+				Key:            kunci, // <--- INI DIA RAHASIANYA
+			}, nil)
+
+			if err != nil {
+				log.Printf("Gagal produce: %s", err)
+			}
 		}
-
-		jsonData, err := pesanan.Serialize()
-		if err != nil {
-			log.Printf("Gagal serialize pesanan %d: %s\n", i, err)
-			continue
-		}
-
-		// Kirim pesan secara asinkron
-		topic := TopicPesananMasuk
-		err = p.Produce(&kafka.Message{
-			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-			Value:          jsonData,
-		}, nil)
-
-		time.Sleep(100 * time.Millisecond) // Kasih jeda sedikit
 	}
 
-	// Tunggu semua pesan terkirim sebelum keluar
+	fmt.Println("Menunggu konfirmasi pengiriman...")
 	p.Flush(15 * 1000)
-	fmt.Println("Semua pesanan selesai dikirim.")
+	fmt.Println("✅ Semua status pesanan selesai dikirim.")
 }
