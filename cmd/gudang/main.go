@@ -9,17 +9,19 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+
+	"kafka-ecommerce/common"
 )
 
 func main() {
-	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": KafkaBroker})
+	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": common.KafkaBroker})
 	if err != nil {
 		log.Fatalf("Gagal membuat producer: %s\n", err)
 	}
 	defer p.Close()
 
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": KafkaBroker,
+		"bootstrap.servers": common.KafkaBroker,
 		"group.id":          "gudang_group",
 		"auto.offset.reset": "earliest",
 	})
@@ -29,7 +31,7 @@ func main() {
 	}
 	defer c.Close()
 
-	c.SubscribeTopics([]string{TopicPesananMasuk}, nil)
+	c.SubscribeTopics([]string{common.TopicPesananMasuk}, nil)
 	fmt.Println("Gudang siap menerima pesanan...")
 
 	sigchan := make(chan os.Signal, 1)
@@ -51,7 +53,7 @@ func main() {
 
 			switch e := ev.(type) {
 			case *kafka.Message:
-				pesanan, err := DeserializePesanan(e.Value)
+				pesanan, err := common.DeserializePesanan(e.Value)
 				if err != nil {
 					log.Printf("Gagal deserialize pesan: %s\n", err)
 					continue
@@ -59,11 +61,11 @@ func main() {
 
 				fmt.Printf("[GUDANG] Menerim Pesanan #%d\n", pesanan.ID)
 
-				time.Sleep(500 * time.Millisecond)
+				time.Sleep(1 * time.Millisecond)
 
 				jsonData, _ := pesanan.Serialize()
 
-				topicTujuan := TopicStokAman
+				topicTujuan := common.TopicStokAman
 				p.Produce(&kafka.Message{
 					TopicPartition: kafka.TopicPartition{Topic: &topicTujuan, Partition: kafka.PartitionAny},
 					Value:          jsonData,

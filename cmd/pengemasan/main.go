@@ -8,18 +8,20 @@ import (
 	"syscall"
 	"time"
 
+	"kafka-ecommerce/common"
+
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 func main() {
-	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": KafkaBroker})
+	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": common.KafkaBroker})
 	if err != nil {
 		log.Fatalf("Gagal membuat producer: %s\n", err)
 	}
 	defer p.Close()
 
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": KafkaBroker,
+		"bootstrap.servers": common.KafkaBroker,
 		"group.id":          "grup-pengemasan", // Beda Group ID
 		"auto.offset.reset": "earliest",
 	})
@@ -28,7 +30,7 @@ func main() {
 	}
 	defer c.Close()
 
-	c.SubscribeTopics([]string{TopicStokAman}, nil) // Beda Topic Baca
+	c.SubscribeTopics([]string{common.TopicStokAman}, nil) // Beda Topic Baca
 	fmt.Println("Departemen PENGEMASAN siap menerima pekerjaan...")
 
 	sigchan := make(chan os.Signal, 1)
@@ -48,7 +50,7 @@ func main() {
 
 			switch e := ev.(type) {
 			case *kafka.Message:
-				pesanan, err := DeserializePesanan(e.Value)
+				pesanan, err := common.DeserializePesanan(e.Value)
 				if err != nil {
 					log.Printf("Gagal deserialize: %s\n", err)
 					continue
@@ -64,7 +66,7 @@ func main() {
 				// 2. Kirim ke ban berjalan selanjutnya
 				jsonData, _ := pesanan.Serialize()
 
-				topicTujuan := TopicSiapKirim
+				topicTujuan := common.TopicSiapKirim
 				p.Produce(&kafka.Message{
 					TopicPartition: kafka.TopicPartition{Topic: &topicTujuan, Partition: kafka.PartitionAny},
 					Value:          jsonData,

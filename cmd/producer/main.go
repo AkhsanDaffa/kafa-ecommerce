@@ -5,10 +5,12 @@ import (
 	"log"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+
+	"kafka-ecommerce/common"
 )
 
 func main() {
-	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": KafkaBroker})
+	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": common.KafkaBroker})
 	if err != nil {
 		log.Fatalf("Gagal membuat producer: %s\n", err)
 	}
@@ -27,8 +29,8 @@ func main() {
 		}
 	}()
 
-	topic := TopicPesananMasuk
-	jumlahPesanan := 10 // Kita kurangi jadi 10, tapi tiap pesanan punya 3 status
+	topic := common.TopicPesananMasuk
+	jumlahPesanan := 5000 // Kita kurangi jadi 10, tapi tiap pesanan punya 3 status
 
 	fmt.Printf("🌊 Mengirim update status berurutan untuk %d Pesanan...\n", jumlahPesanan)
 
@@ -37,7 +39,7 @@ func main() {
 		statusList := []string{"DIBUAT", "DIBAYAR", "DIKIRIM"}
 
 		for _, status := range statusList {
-			pesanan := Pesanan{
+			pesanan := common.Pesanan{
 				ID:         i,
 				NamaBarang: fmt.Sprintf("Barang #%d", i),
 				Status:     status,
