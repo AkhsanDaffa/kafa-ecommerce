@@ -8,6 +8,8 @@ const (
 	TopicPesananMasuk = "topic_pesanan_masuk"
 	TopicStokAman     = "topic_stok_aman"
 	TopicSiapKirim    = "topic_siap_kirim"
+
+	TopicPesananError = "topic_pesanan_error"
 )
 
 type Pesanan struct {

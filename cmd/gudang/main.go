@@ -54,14 +54,25 @@ func main() {
 			switch e := ev.(type) {
 			case *kafka.Message:
 				pesanan, err := common.DeserializePesanan(e.Value)
+
 				if err != nil {
-					log.Printf("Gagal deserialize pesan: %s\n", err)
+					fmt.Printf("⚠️ ERROR: Data rusak ditemukan! '%s'\n", string(e.Value))
+
+					topicDLQ := common.TopicPesananError
+					p.Produce(&kafka.Message{
+						TopicPartition: kafka.TopicPartition{Topic: &topicDLQ, Partition: kafka.PartitionAny},
+						Value:          e.Value,
+						Key:            e.Key,
+					}, nil)
+
+					fmt.Printf("🗑️  Dibuang ke DLQ: %s\n", topicDLQ)
+
 					continue
 				}
 
 				fmt.Printf("[GUDANG] Menerim Pesanan #%d\n", pesanan.ID)
 
-				time.Sleep(1 * time.Millisecond)
+				time.Sleep(100 * time.Millisecond)
 
 				jsonData, _ := pesanan.Serialize()
 

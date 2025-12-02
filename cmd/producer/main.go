@@ -30,7 +30,7 @@ func main() {
 	}()
 
 	topic := common.TopicPesananMasuk
-	jumlahPesanan := 5000 // Kita kurangi jadi 10, tapi tiap pesanan punya 3 status
+	jumlahPesanan := 10 // Kita kurangi jadi 10, tapi tiap pesanan punya 3 status
 
 	fmt.Printf("🌊 Mengirim update status berurutan untuk %d Pesanan...\n", jumlahPesanan)
 
